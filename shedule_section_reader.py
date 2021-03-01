@@ -1,4 +1,6 @@
 from lib import schedule_lib as sl
+import pandas as pd
+import pytest
 
 schedule_name = input('Введите имя shedule файла: ')  # ввод пути файла shedule секции
 schedule_file = 'input' + '\\' + schedule_name
@@ -33,3 +35,8 @@ if __name__ == "__main__":
     compdatl_list = []
     compdatl_list = sl.parse_keyword_COMPDATL_line(line_clean, count_clean)
     print("COMPDATL", "\n", compdatl_list)
+
+    def data_list_test(self):
+        output = pd.Series(['1 JUN 2018', '01 JUL 2018', '01 AUG 2018', '01 SEP 2018',
+            '01 OCT 2018', '01 NOV 2018','01 DEC 2018'])
+        assert sl.parse_keyword_COMPDAT_line(line_clean, count_clean) == output

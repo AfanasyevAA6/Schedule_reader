@@ -72,11 +72,26 @@ def parse_keyword_COMPDAT_line(line, count):
         if identificator_compdat == 1 and parametrs[0] != 'COMPDAT':
             parametrs.remove('/')                        # удаление лишних символов
             parametrs.insert(1, float("nan"))            # добавление пустого параметра
-            compdat_list.append(parametrs)               # запись параметров
+        
+            p = 0
+            length = len(parametrs)
+            for k in range(length):
+                if type(parametrs[k]) == str:
+                    length_word = len(parametrs[k])
+                    if parametrs[k][length_word - 1] == '*':
+                        p = k
+                        chislo = int(parametrs[k][:(length_word - 1)])
+                        parametrs.pop(p)
+                        length -= 1
+                        for j in range(chislo):
+                            parametrs.insert(p, "DEFAULT")
+                            length += 1
+    
+            compdat_list.append(parametrs)                   # запись параметров
             
     return pd.Series(compdat_list)
 
-# Функция обнаружения параметров ключевого слова COMPDATl
+# Функция обнаружения параметров ключевого слова COMPDATL
 def parse_keyword_COMPDATL_line(line, count):
     
     identificator_compdatl = 0                           # вспомогательный параметр
@@ -90,6 +105,21 @@ def parse_keyword_COMPDATL_line(line, count):
         if parametrs[0] == '/': identificator_compdatl = 0
         if identificator_compdatl == 1 and parametrs[0] != 'COMPDATL':
             parametrs.remove('/')                        # удаление лишних символов
+            
+            p = 0
+            length = len(parametrs)
+            for k in range(length):
+                if type(parametrs[k]) == str:
+                    length_word = len(parametrs[k])
+                    if parametrs[k][length_word - 1] == '*':
+                        p = k
+                        chislo = int(parametrs[k][:(length_word - 1)])
+                        parametrs.pop(p)
+                        length -= 1
+                        for j in range(chislo):
+                            parametrs.insert(p, "DEFAULT")
+                            length += 1
+            
             compdatl_list.append(parametrs)              # запись параметров
     return pd.Series(compdatl_list)
 
