@@ -1,11 +1,16 @@
 import pandas as pd
 import re
+import test
+import numpy as np
+
 # функция, которая чистит текст открытого исходного файла
-def clean_schedule(line, file_path, count):
+def clean_schedule(line, file_path):
     # создание нового файла
     file = open(file_path, 'w', encoding = "UTF-8")
     line_clean = []
-    for i in range(count):    
+    count = len(line)
+
+    for i in range(count):
         # удаление лишних пробелов между параметрами
         line[i] = re.sub(r'\s+', ' ', line[i])
 
@@ -29,97 +34,57 @@ def clean_schedule(line, file_path, count):
     file.close()
     return line_clean
 
-# Функция обнаружения параметров ключевого слова DATA в случае, если подается строка, а не список (пусть будет)
-def parse_keyword_DATE_line_example(line):
-    # создание списка из строки 
-    parametrs = line.split(' ')
-    
-    if len(parametrs) > 3:
-        if parametrs[0].isdigit() == True and parametrs[1].isalpha() == True and parametrs[2].isdigit() == True:
-            line = parametrs[0] + ' ' + parametrs[1] + ' ' + parametrs[2]
-            print(line)
-            return line
-
 # Функция обнаружения параметров ключевого слова DATA
-def parse_keyword_DATE_line(line, count):
-    
-    identificator_dat = 0                               # вспомогательный параметр
-    data_list = []
-    
-    for i in range(count):
-        parametrs = line[i].split(' ')                  # разделение строки по пробелам
-        
-        #условия для нахождения дат
-        if parametrs[0] == 'DATES': identificator_dat = 1 
-        if parametrs[0] == '/': identificator_dat = 0
-        if identificator_dat == 1 and parametrs[0] != 'DATES':
-            data_list.append(parametrs[0] + ' ' + parametrs[1] + ' ' + parametrs[2]) # запись дат
+def parse_keyword_DATE_line(line):
+
+    parametrs = line.split(' ')                  # разделение строки по пробелам
+    data_list = parametrs[0] + ' ' + parametrs[1] + ' ' + parametrs[2] # запись дат
             
-    return pd.Series(data_list)
+    return data_list
 
 # Функция обнаружения параметров ключевого слова COMPDAT
-def parse_keyword_COMPDAT_line(line, count):
-    
-    identificator_compdat = 0                            # вспомогательный параметр
-    compdat_list = []
-    
-    for i in range(count):
-        parametrs = line[i].split(' ')                   # разделение строки по пробелам
-        
-        #условия для нахождения параметров ключевого слова
-        if parametrs[0] == 'COMPDAT': identificator_compdat = 1
-        if parametrs[0] == '/': identificator_compdat = 0
-        if identificator_compdat == 1 and parametrs[0] != 'COMPDAT':
-            parametrs.remove('/')                        # удаление лишних символов
-            parametrs.insert(1, float("nan"))            # добавление пустого параметра
-        
-            p = 0
-            length = len(parametrs)
-            for k in range(length):
-                if type(parametrs[k]) == str:
-                    length_word = len(parametrs[k])
-                    if parametrs[k][length_word - 1] == '*':
-                        p = k
-                        chislo = int(parametrs[k][:(length_word - 1)])
-                        parametrs.pop(p)
-                        length -= 1
-                        for j in range(chislo):
-                            parametrs.insert(p, "DEFAULT")
-                            length += 1
-    
-            compdat_list.append(parametrs)                   # запись параметров
-            
-    return pd.Series(compdat_list)
+def parse_keyword_COMPDAT_line(line):
+
+    parametrs = line.split(' ')  # разделение строки по пробелам
+    parametrs.remove('/')  # удаление лишних символов
+    parametrs.insert(1, np.nan)  # добавление пустого параметра
+    length = len(parametrs)
+    p = 0
+    for k in range(length):
+        if type(parametrs[k]) == str:
+            length_word = len(parametrs[k])
+            if parametrs[k][length_word - 1] == '*':
+                p = k
+                chislo = int(parametrs[k][:(length_word - 1)])
+                parametrs.pop(p)
+                length -= 1
+                for j in range(chislo):
+                    parametrs.insert(p, "DEFAULT")
+                    length += 1
+
+    compdat_list = parametrs  # запись параметров
+
+    return compdat_list
 
 # Функция обнаружения параметров ключевого слова COMPDATL
-def parse_keyword_COMPDATL_line(line, count):
-    
-    identificator_compdatl = 0                           # вспомогательный параметр
-    compdatl_list = []
-    
-    for i in range(count):
-        parametrs = line[i].split(' ')                   # разделение строки по пробелам
-        
-        #условия для нахождения параметров ключевого слова
-        if parametrs[0] == 'COMPDATL': identificator_compdatl = 1
-        if parametrs[0] == '/': identificator_compdatl = 0
-        if identificator_compdatl == 1 and parametrs[0] != 'COMPDATL':
-            parametrs.remove('/')                        # удаление лишних символов
-            
-            p = 0
-            length = len(parametrs)
-            for k in range(length):
-                if type(parametrs[k]) == str:
-                    length_word = len(parametrs[k])
-                    if parametrs[k][length_word - 1] == '*':
-                        p = k
-                        chislo = int(parametrs[k][:(length_word - 1)])
-                        parametrs.pop(p)
-                        length -= 1
-                        for j in range(chislo):
-                            parametrs.insert(p, "DEFAULT")
-                            length += 1
-            
-            compdatl_list.append(parametrs)              # запись параметров
-    return pd.Series(compdatl_list)
+def parse_keyword_COMPDATL_line(line):
 
+    parametrs = line.split(' ')  # разделение строки по пробелам
+    parametrs.remove('/')  # удаление лишних символов
+    length = len(parametrs)
+    p = 0
+    for k in range(length):
+        if type(parametrs[k]) == str:
+            length_word = len(parametrs[k])
+            if parametrs[k][length_word - 1] == '*':
+                p = k
+                chislo = int(parametrs[k][:(length_word - 1)])
+                parametrs.pop(p)
+                length -= 1
+                for j in range(chislo):
+                    parametrs.insert(p, "DEFAULT")
+                    length += 1
+
+    compdatl_list = parametrs  # запись параметров
+
+    return compdatl_list
