@@ -1,7 +1,7 @@
 from lib import schedule_lib as sl
 import numpy as np
 
-schedule_name = input('Введите имя shedule файла (name.inc): ')  # ввод имени файла shedule секции
+schedule_name = r'test_schedule.inc'  # ввод имени файла shedule секции
 schedule_file = 'input' + '\\' + schedule_name
 
 with open(schedule_file, "r", encoding="UTF-8") as file:
@@ -33,68 +33,47 @@ if __name__ == "__main__":
     identificator_compdatl = 0
     for i in range(count):
 
-        compdat_list = []
-        compdatl_list = []
         result = []
-        # нахождение дат
         parametrs = line_clean[i].split(' ')
 
-        # условия для нахождения дат
-        if parametrs[0] == 'DATES': identificator_dat = 1
-        if parametrs[0] == '/': identificator_dat = 0
+        # -----------------определение наличия ключевого слова---------------------
 
-        # список дат
-        if identificator_dat == 1 and parametrs[0] != 'DATES':
-            data = sl.parse_keyword_DATE_line(line_clean[i])
-            data_list.append(data)
-            #print(data_list)
-        #---------------------------------------------------------------------------------------------------------------
+        identificator_dat = sl.identification_kyeword(parametrs, 'DATES', identificator_dat)
+        identificator_compdat = sl.identification_kyeword(parametrs, 'COMPDAT', identificator_compdat)
+        identificator_compdatl = sl.identification_kyeword(parametrs, 'COMPDATL', identificator_compdatl)
 
-        # нахождение COMPDAT
+        #------------------------нахождение дат--------------------------------------
 
-        # условия для нахождения дат
-        if parametrs[0] == 'COMPDAT': identificator_compdat = 1
-        if parametrs[0] == '/': identificator_compdat = 0
+        data = sl.finder_date(parametrs, 'DATES', identificator_dat, data)
+        if data not in data_list and data!='': data_list.append(data)
 
-        # список COMPDAT
-        if identificator_compdat == 1 and parametrs[0] != 'COMPDAT':
-            compdat_list = sl.parse_keyword_COMPDAT_line(line_clean[i])
-            #print(compdat_list)
-        #---------------------------------------------------------------------------------------------------------------
+        #-----------------нахождение параметров кл. слова COMPDAT--------------------
 
-        # нахождение COMPDATL
+        compdat_list = sl.finder_key_word(parametrs, 'COMPDAT', identificator_compdat)
 
-        # условия для нахождения дат
-        if parametrs[0] == 'COMPDATL': identificator_compdatl = 1
-        if parametrs[0] == '/': identificator_compdatl = 0
+        #-----------------нахождение параметров кл. слова COMPDATL-------------------
 
-        # список COMPDATL
-        if identificator_compdatl == 1 and parametrs[0] != 'COMPDATL':
-            compdatl_list = sl.parse_keyword_COMPDATL_line(line_clean[i])
-            #print(compdatl_list)
+        compdatl_list = sl.finder_key_word(parametrs, 'COMPDATL', identificator_compdatl)
 
-    #------------------------------------------------------------------------------------------------------------------
+        #---------------условия для формирования результата------------------------
+       
+        result = sl.for_date_with_parametrs(data, data_list, compdat_list, compdatl_list, result)
+        
+        result = sl.for_last_date_without_parametrs(i, count, data, final_result, data_list, result)
+        
+        result = sl.for_parametrs_without_date(data_list, compdat_list, compdatl_list, result)
+       
+        final_result = sl.for_date_without_parametrs(data_list, final_result)
+        
+        final_result = sl.sum_for_date_with_parametrs(result, final_result)
 
-        # условие для присваивания значений параметров, непривязанных к датам
-        if data_list == [] and (compdat_list != [] or compdatl_list != []):
-            result = [np.nan] + compdat_list + compdatl_list
-        # условие для присваивания значений на последнюю дату, в случае если на эту дату не были заданы параметры ранее
-        if data_list != []:
-            if line_clean[i+1].split(' ')[0] == 'END' and final_result[len(final_result) - 1][0] != data_list:
-                result = [data] + [np.nan]
-        # условие для присваивания значений параметров привязанных к датам
-        if data_list != [] and (compdat_list != [] or compdatl_list != []):
-            result = [data] + compdat_list + compdatl_list
-        # условие для присваивания на тот случай, если на определенную дату нет значений параметров
-        if len(data_list) > 1:
-            if data_list[len(data_list)-2] != final_result[len(final_result) - 1][0]:
-                if ([data_list[len(data_list)-2], np.nan] in final_result) == False:
-                    final_result.append([data_list[len(data_list)-2], np.nan])
-        # условие для дополнения списка найденной информацией
-        if result!= [] and (result in final_result) == False :
-            final_result.append(result)
-        # условие для работы условия для последней даты
-        if i == count - 2: break
-
+    #---------------------------------------------------------------------------------------------------------------
+    
+    outfile = open(r'output\\result.txt', 'w')
     for i in range(len(final_result)):
+        for j in range(len(final_result[i])):
+            if final_result[i][j]!=np.nan:final_result[i][j] = str(final_result[i][j])
+            outfile.write(final_result[i][j] + '\t')
+        outfile.write('\n')
         print(final_result[i])
+    outfile.close()

@@ -1,6 +1,5 @@
 import pandas as pd
 import re
-import test
 import numpy as np
 
 # функция, которая чистит текст открытого исходного файла
@@ -34,18 +33,24 @@ def clean_schedule(line, file_path):
     file.close()
     return line_clean
 
-# Функция обнаружения параметров ключевого слова DATA
-def parse_keyword_DATE_line(line):
+def identification_kyeword(parametrs, keyword, identificator):
 
-    parametrs = line.split(' ')                  # разделение строки по пробелам
-    data_list = parametrs[0] + ' ' + parametrs[1] + ' ' + parametrs[2] # запись дат
-            
-    return data_list
+    # условия для нахождения ключевого слова
+    if parametrs[0] == keyword: 
+        identificator = 1
+    if parametrs[0] == '/': 
+        identificator = 0
+
+    return identificator
+
+# Функция обнаружения параметров ключевого слова DATA
+def parse_keyword_DATE_line(parametrs):
+    date = parametrs[0] + ' ' + parametrs[1] + ' ' + parametrs[2]
+    return date # запись дат
 
 # Функция обнаружения параметров ключевого слова COMPDAT
-def parse_keyword_COMPDAT_line(line):
+def parse_keyword_COMPDAT_line(parametrs):
 
-    parametrs = line.split(' ')  # разделение строки по пробелам
     parametrs.remove('/')  # удаление лишних символов
     parametrs.insert(1, np.nan)  # добавление пустого параметра
     length = len(parametrs)
@@ -61,15 +66,13 @@ def parse_keyword_COMPDAT_line(line):
                 for j in range(chislo):
                     parametrs.insert(p, "DEFAULT")
                     length += 1
-
-    compdat_list = parametrs  # запись параметров
+        compdat_list = parametrs  # запись параметров
 
     return compdat_list
 
 # Функция обнаружения параметров ключевого слова COMPDATL
-def parse_keyword_COMPDATL_line(line):
+def parse_keyword_COMPDATL_line(parametrs):
 
-    parametrs = line.split(' ')  # разделение строки по пробелам
     parametrs.remove('/')  # удаление лишних символов
     length = len(parametrs)
     p = 0
@@ -84,7 +87,52 @@ def parse_keyword_COMPDATL_line(line):
                 for j in range(chislo):
                     parametrs.insert(p, "DEFAULT")
                     length += 1
-
     compdatl_list = parametrs  # запись параметров
 
     return compdatl_list
+
+def finder_date(parametrs, keyword, identificator, date):
+    if identification_kyeword(parametrs, keyword, identificator) == 1 and parametrs[0] != keyword:
+        return parse_keyword_DATE_line(parametrs)
+    else: return date
+
+def finder_key_word(parametrs, keyword, identificator):
+    if identification_kyeword(parametrs, keyword, identificator) == 1 and parametrs[0] != keyword:
+        if keyword == 'COMPDAT':
+            return parse_keyword_COMPDAT_line(parametrs)
+        if keyword == 'COMPDATL':
+            return parse_keyword_COMPDATL_line(parametrs)
+    return []
+
+# условие для присваивания значений параметров привязанных к датам
+def for_date_with_parametrs(data, data_list, compdat_list, compdatl_list, result):        
+    if data_list != [] and (compdat_list != [] or compdatl_list != []):
+        result = [data] + compdat_list + compdatl_list
+    return result
+
+# условие для присваивания значений на последнюю дату, в случае если на эту дату не были заданы параметры ранее
+def for_last_date_without_parametrs(i, count, data, final_result, data_list, result):    
+    if data_list != []:
+        if i == count - 1 and final_result[len(final_result) - 1][0] != data_list:
+            result = [data] + [np.nan]
+    return result
+
+# условие для присваивания значений параметров, непривязанных к датам
+def for_parametrs_without_date(data_list, compdat_list, compdatl_list, result):        
+    if data_list == [] and (compdat_list != [] or compdatl_list != []):
+        result = [np.nan] + compdat_list + compdatl_list
+    return result
+
+# условие для присваивания на тот случай, если на определенную дату нет значений параметров
+def for_date_without_parametrs(data_list, final_result):
+    if len(data_list) > 1:
+        if data_list[len(data_list)-2] != final_result[len(final_result) - 1][0]:
+            if ([data_list[len(data_list)-2], np.nan] in final_result) == False:
+                final_result.append([data_list[len(data_list)-2], np.nan])
+    return final_result
+
+# условие для дополнения списка найденной информацией
+def sum_for_date_with_parametrs(result, final_result):
+    if result!= [] and (result in final_result) == False :
+        final_result.append(result)
+    return final_result
